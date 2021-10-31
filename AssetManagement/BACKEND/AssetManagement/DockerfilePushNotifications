@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
+WORKDIR /src
+COPY ["PushNotifications/PushNotifications.csproj", "PushNotifications/"]
+COPY ["Models/Models.csproj", "Models/"]
+
+RUN dotnet restore "PushNotifications/PushNotifications.csproj"
+COPY . .
+WORKDIR "/src/PushNotifications"
+RUN dotnet build "PushNotifications.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "PushNotifications.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+ENTRYPOINT ["dotnet", "PushNotifications.dll"]
